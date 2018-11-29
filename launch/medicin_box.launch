@@ -1,0 +1,5 @@
+<launch>
+    <node name="driver_medicine_box" pkg="driver_medicine_box" type="main.py" respawn="true" />
+    <rosparam file="$(find driver_medicine_box)/config/medicine_box.yaml" command="load"/>
+
+</launch>
