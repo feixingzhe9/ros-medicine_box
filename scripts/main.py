@@ -17,10 +17,13 @@ rcv_queue = None
 FRAME_HEADER = 0x5A
 FRAME_FOOTER = 0xA5
 
+FRAME_HEART_BEAT = 1
+FRAME_LEN_MAX = 255
+
 def open_com():
     global ser_handle
     global dev_com
-    ser_handle = serial.Serial(dev_com, 9600, timeout = 0.3)
+    ser_handle = serial.Serial(dev_com, 9600, timeout = 0.1)
 
 
 def com_send(data):
@@ -43,7 +46,7 @@ def send_thread(tmp):
 def rcv_thread(tmp):
     global rcv_queue
     while 1:
-        read_data = com_rcv(255)
+        read_data = com_rcv(20)
         for i in read_data:
              #print i
              rcv_queue.put(ord(i))
@@ -58,7 +61,7 @@ class RcvOpt(object):
         self.data_len = 0
         self.rcv_cnt = 0
         self.rcv_buf = []
-        for i in range(0, 255):
+        for i in range(0, FRAME_LEN_MAX):
             self.rcv_buf.append(0)
         print self.rcv_buf
 
@@ -67,6 +70,27 @@ def check_frame_sum(data, data_len):
     for i in range(0, data_len):
        data_sum = data_sum + data[i]
     return data_sum
+
+def proc_frame(frame, frame_len):
+    frame_type = frame[0]
+    if frame_len >= FRAME_LEN_MAX - 4:
+        return -1
+    print "frame type: ", str(frame_type)
+    if frame_type == FRAME_HEART_BEAT:
+        rcv_id = 0
+        rcv_id = frame[4]
+        rcv_id |= frame[3] << 8
+        rcv_id |= frame[2] << 16
+        rcv_id |= frame[1] << 24
+        print "get id: ", str(rcv_id)
+
+        heart_beat_cnt = 0
+        heart_beat_cnt = frame[8]
+        heart_beat_cnt |= frame[7] << 8
+        heart_beat_cnt |= frame[6] << 16
+        heart_beat_cnt |= frame[5] << 24
+        print "get heart beat cnt: ", str(heart_beat_cnt)
+
 
 def protocol_proc_thread(tmp):
     global rcv_queue
@@ -85,7 +109,6 @@ def protocol_proc_thread(tmp):
                     wireless_rcv_com_opt.data_len = data_tmp
                     #print "wireless_rcv_com_opt.data_len :", str(wireless_rcv_com_opt.data_len)
 
-
                 if wireless_rcv_com_opt.rcv_cnt == wireless_rcv_com_opt.data_len - 1:
                     #print "get wireless_rcv_com_opt.rcv_cnt == wireless_rcv_com_opt.data_len - 1"
                     if wireless_rcv_com_opt.rcv_buf[wireless_rcv_com_opt.rcv_cnt] == FRAME_FOOTER:
@@ -95,6 +118,7 @@ def protocol_proc_thread(tmp):
                         wireless_rcv_com_opt.rcv_cnt = 0
                         if check_frame_sum(wireless_rcv_com_opt.rcv_buf, wireless_rcv_com_opt.data_len - 1):
                             #frame_proc(&wireless_rcv_com_opt.rcv_buf[2], wireless_rcv_com_opt.data_len - 4)
+                            proc_frame(wireless_rcv_com_opt.rcv_buf[2:], wireless_rcv_com_opt.data_len - 4)
                             print "hello here"
                         else:
                             print "frame check sum error !"
@@ -117,7 +141,7 @@ def protocol_proc_thread(tmp):
                 wireless_rcv_com_opt.rcv_cnt = 0
     
             wireless_rcv_com_opt.rcv_cnt =  wireless_rcv_com_opt.rcv_cnt + 1
-            if wireless_rcv_com_opt.rcv_cnt >= 255 - 1:
+            if wireless_rcv_com_opt.rcv_cnt >= FRAME_LEN_MAX - 1:
                 wireless_rcv_com_opt.start_flag = False
                 wireless_rcv_com_opt.end_flag = False
                 wireless_rcv_com_opt.rcv_cnt = 0
