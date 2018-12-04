@@ -13,12 +13,15 @@ dev_com = "/dev/ttyUSB0"
 ser_handle = None
 
 rcv_queue = None
+ack_queue = None
 
 FRAME_HEADER = 0x5A
 FRAME_FOOTER = 0xA5
 
 FRAME_HEART_BEAT = 1
 FRAME_LEN_MAX = 255
+
+PROTOCOL_CLASS_FP = 1
 
 def open_com():
     global ser_handle
@@ -44,6 +47,7 @@ def send_thread(tmp):
 
 def rcv_thread(tmp):
     global rcv_queue
+    global ack_queue
     while 1:
         read_data = com_rcv(20)
         for i in read_data:
@@ -61,6 +65,18 @@ class RcvOpt(object):
             self.rcv_buf.append(0)
         print self.rcv_buf
 
+class AckInfo(object):
+    def __init__(self):
+        self.serial_num = 0
+        self.protocol_class = 0
+        self.protocol_type = 0
+        self.data = []
+        for i in range(0, FRAME_LEN_MAX):
+            self.data.append(0)
+    def clear(self):
+        for i in range(0, FRAME_LEN_MAX):
+            self.data[i] = 0
+
 def check_frame_sum(data, data_len):
     data_sum = 0
     for i in range(0, data_len):
@@ -68,6 +84,8 @@ def check_frame_sum(data, data_len):
     return data_sum
 
 def proc_frame(frame, frame_len):
+    global ack_queue
+    ack_info = AckInfo()
     frame_type = frame[0]
     if frame_len >= FRAME_LEN_MAX - 4:
         return -1
@@ -86,6 +104,15 @@ def proc_frame(frame, frame_len):
         heart_beat_cnt |= frame[6] << 16
         heart_beat_cnt |= frame[5] << 24
         print "get heart beat cnt: ", str(heart_beat_cnt)
+        ack_info.clear()
+        ack_info.protocol_class = PROTOCOL_CLASS_FP
+        ack_info.protocol_type = FRAME_HEART_BEAT
+        ack_info.data[0] = 1
+        ack_info.data[1] = 2
+        ack_info.data[2] = 3
+        ack_info.data[3] = 4
+
+        ack_queue.put(ack_info)
 
 
 def protocol_proc_thread(tmp):
@@ -141,7 +168,9 @@ def main():
     rospy.init_node("medicine_box", anonymous=True)
     open_com()
     global rcv_queue
+    global ack_queue
     rcv_queue = Queue.Queue()
+    ack_queue = Queue.Queue()
     thread_send = threading.Thread(target = send_thread, args = (0,))
     thread_rcv = threading.Thread(target = rcv_thread, args = (0,))
     thread_protocol_proc = threading.Thread(target = protocol_proc_thread, args = (0,))
@@ -155,15 +184,23 @@ def main():
     #thread_send.join()
     #thread_rcv.join()
     print "join test"
+    #### test code start ####
+    while 1:
+        if not ack_queue.empty():
+            ack = ack_queue.get()
+            print 'ack ', ack.data[0]
+            print 'ack ', ack.data[1]
+            print 'ack ', ack.data[2]
+            print 'ack ', ack.data[3]
     rospy.spin()
 
 if __name__ == "__main__":
     try:
         main()
     except Exception: #rospy.ROSInterruptException:
-        thread_send.stop()
-        thread_rcv.stop()
-        thread_protocol_proc.stop()
+        #thread_send.stop()
+        #thread_rcv.stop()
+        #thread_protocol_proc.stop()
         rospy.logerr(sys.exc_info())
         rospy.loginfo("lost connect")
         exit(1)
