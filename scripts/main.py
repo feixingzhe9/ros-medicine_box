@@ -40,7 +40,6 @@ def com_rcv(cnt):
 def send_thread(tmp):
     while 1:
         #com_send("send test")
-        #print "send"
         time.sleep(0.5)
 
 def rcv_thread(tmp):
@@ -48,10 +47,7 @@ def rcv_thread(tmp):
     while 1:
         read_data = com_rcv(20)
         for i in read_data:
-             #print i
              rcv_queue.put(ord(i))
-
-        #print read_data 
         time.sleep(0.1)
 
 class RcvOpt(object):
@@ -82,7 +78,7 @@ def proc_frame(frame, frame_len):
         rcv_id |= frame[3] << 8
         rcv_id |= frame[2] << 16
         rcv_id |= frame[1] << 24
-        print "get id: ", str(rcv_id)
+        print "get id: ", hex(rcv_id)
 
         heart_beat_cnt = 0
         heart_beat_cnt = frame[8]
@@ -96,30 +92,24 @@ def protocol_proc_thread(tmp):
     global rcv_queue
     data_tmp = 0
     wireless_rcv_com_opt = RcvOpt()
-    wireless_rcv_com_opt.__init__()
+    #wireless_rcv_com_opt.__init__()
     while 1:
         time.sleep(0.1)
         while not rcv_queue.empty():
             data_tmp = rcv_queue.get()
             wireless_rcv_com_opt.rcv_buf[wireless_rcv_com_opt.rcv_cnt] = data_tmp
             if wireless_rcv_com_opt.start_flag == True:
-                #print "header ready"
-                #print " wireless_rcv_com_opt.rcv_cnt :", str(wireless_rcv_com_opt.rcv_cnt)
                 if wireless_rcv_com_opt.rcv_cnt == 1:
                     wireless_rcv_com_opt.data_len = data_tmp
-                    #print "wireless_rcv_com_opt.data_len :", str(wireless_rcv_com_opt.data_len)
 
                 if wireless_rcv_com_opt.rcv_cnt == wireless_rcv_com_opt.data_len - 1:
-                    #print "get wireless_rcv_com_opt.rcv_cnt == wireless_rcv_com_opt.data_len - 1"
                     if wireless_rcv_com_opt.rcv_buf[wireless_rcv_com_opt.rcv_cnt] == FRAME_FOOTER:
-                        #print "get footer"
                         wireless_rcv_com_opt.end_flag = True
                         wireless_rcv_com_opt.start_flag = False
                         wireless_rcv_com_opt.rcv_cnt = 0
                         if check_frame_sum(wireless_rcv_com_opt.rcv_buf, wireless_rcv_com_opt.data_len - 1):
-                            #frame_proc(&wireless_rcv_com_opt.rcv_buf[2], wireless_rcv_com_opt.data_len - 4)
                             proc_frame(wireless_rcv_com_opt.rcv_buf[2:], wireless_rcv_com_opt.data_len - 4)
-                            print "hello here"
+                            print "process frame protocol"
                         else:
                             print "frame check sum error !"
                             wireless_rcv_com_opt.end_flag = False
@@ -132,7 +122,6 @@ def protocol_proc_thread(tmp):
                         wireless_rcv_com_opt.start_flag = False
                         wireless_rcv_com_opt.rcv_cnt = 0
             else:
-                #print "not ready"
                 if data_tmp == FRAME_HEADER:
                     print "get HEADER"
                     wireless_rcv_com_opt.start_flag = True
@@ -172,8 +161,9 @@ if __name__ == "__main__":
     try:
         main()
     except Exception: #rospy.ROSInterruptException:
-        #thread_send.stop()
-        #thread_rcv.stop()
+        thread_send.stop()
+        thread_rcv.stop()
+        thread_protocol_proc.stop()
         rospy.logerr(sys.exc_info())
         rospy.loginfo("lost connect")
         exit(1)
