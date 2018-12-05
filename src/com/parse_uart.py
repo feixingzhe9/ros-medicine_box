@@ -4,18 +4,10 @@
 import Queue
 import time
 import uart_rcv
-
-#ack_queue = None
-
+import uart_send
+import protocol_param
 ack_queue = Queue.Queue()
 
-FRAME_HEADER = 0x5A
-FRAME_FOOTER = 0xA5
-
-FRAME_HEART_BEAT = 1
-FRAME_LEN_MAX = 255
-
-PROTOCOL_CLASS_FP = 1
 
 class RcvOpt(object):
     def __init__(self):
@@ -24,17 +16,16 @@ class RcvOpt(object):
         self.data_len = 0
         self.rcv_cnt = 0
         self.rcv_buf = []
-        for i in range(0, FRAME_LEN_MAX):
+        for i in range(0, protocol_param.FRAME_LEN_MAX):
             self.rcv_buf.append(0)
         print self.rcv_buf
 
 
-def check_frame_sum(data, data_len):
+def cal_frame_sum(data, data_len):
     data_sum = 0
     for i in range(0, data_len):
        data_sum = data_sum + data[i]
-    return data_sum
-
+    return data_sum & 0x00ff
 
 def protocol_proc_thread(tmp):
     data_tmp = 0
@@ -50,15 +41,19 @@ def protocol_proc_thread(tmp):
                     wireless_rcv_com_opt.data_len = data_tmp
 
                 if wireless_rcv_com_opt.rcv_cnt == wireless_rcv_com_opt.data_len - 1:
-                    if wireless_rcv_com_opt.rcv_buf[wireless_rcv_com_opt.rcv_cnt] == FRAME_FOOTER:
+                    if wireless_rcv_com_opt.rcv_buf[wireless_rcv_com_opt.rcv_cnt] == protocol_param.FRAME_FOOTER:
                         wireless_rcv_com_opt.end_flag = True
                         wireless_rcv_com_opt.start_flag = False
                         wireless_rcv_com_opt.rcv_cnt = 0
-                        if check_frame_sum(wireless_rcv_com_opt.rcv_buf, wireless_rcv_com_opt.data_len - 1):
+                        #if check_frame_sum(wireless_rcv_com_opt.rcv_buf, wireless_rcv_com_opt.data_len - 1):
+                        if cal_frame_sum(wireless_rcv_com_opt.rcv_buf, wireless_rcv_com_opt.data_len - 2) == wireless_rcv_com_opt.rcv_buf[wireless_rcv_com_opt.data_len - 2]:
                             proc_frame(wireless_rcv_com_opt.rcv_buf[2:], wireless_rcv_com_opt.data_len - 4)
                             print "process frame protocol"
                         else:
                             print "frame check sum error !"
+                            print "cal check sum is: ", cal_frame_sum(wireless_rcv_com_opt.rcv_buf, wireless_rcv_com_opt.data_len - 1)
+                            print "get check sum is: ", wireless_rcv_com_opt.rcv_buf[wireless_rcv_com_opt.data_len - 2]
+                            print "rcv buf :", wireless_rcv_com_opt.rcv_buf
                             wireless_rcv_com_opt.end_flag = False
                             wireless_rcv_com_opt.start_flag = False
                             wireless_rcv_com_opt.rcv_cnt = 0
@@ -69,7 +64,7 @@ def protocol_proc_thread(tmp):
                         wireless_rcv_com_opt.start_flag = False
                         wireless_rcv_com_opt.rcv_cnt = 0
             else:
-                if data_tmp == FRAME_HEADER:
+                if data_tmp == protocol_param.FRAME_HEADER:
                     print "get HEADER"
                     wireless_rcv_com_opt.start_flag = True
                     wireless_rcv_com_opt.end_flag = False
@@ -77,7 +72,7 @@ def protocol_proc_thread(tmp):
                 wireless_rcv_com_opt.rcv_cnt = 0
     
             wireless_rcv_com_opt.rcv_cnt =  wireless_rcv_com_opt.rcv_cnt + 1
-            if wireless_rcv_com_opt.rcv_cnt >= FRAME_LEN_MAX - 1:
+            if wireless_rcv_com_opt.rcv_cnt >= protocol_param.FRAME_LEN_MAX - 1:
                 wireless_rcv_com_opt.start_flag = False
                 wireless_rcv_com_opt.end_flag = False
                 wireless_rcv_com_opt.rcv_cnt = 0
@@ -89,40 +84,39 @@ class AckInfo(object):
         self.protocol_class = 0
         self.protocol_type = 0
         self.data = []
-        for i in range(0, FRAME_LEN_MAX):
+        for i in range(0, protocol_param.FRAME_LEN_MAX):
             self.data.append(0)
     def clear(self):
-        for i in range(0, FRAME_LEN_MAX):
+        for i in range(0, protocol_param.FRAME_LEN_MAX):
             self.data[i] = 0
 
 def proc_frame(frame, frame_len):
     global ack_queue
     ack_info = AckInfo()
-    frame_type = frame[0]
-    if frame_len >= FRAME_LEN_MAX - 4:
+    frame_class = frame[0]
+    frame_type = frame[1]
+    if frame_len >= protocol_param.FRAME_LEN_MAX - 4:
         return -1
     print "frame type: ", str(frame_type)
-    if frame_type == FRAME_HEART_BEAT:
+    if frame_type == protocol_param.FRAME_COMMON_HEART_BEAT:
         rcv_id = 0
-        rcv_id = frame[4]
-        rcv_id |= frame[3] << 8
-        rcv_id |= frame[2] << 16
-        rcv_id |= frame[1] << 24
+        rcv_id = frame[5]
+        rcv_id |= frame[4] << 8
+        rcv_id |= frame[3] << 16
+        rcv_id |= frame[2] << 24
         print "get id: ", hex(rcv_id)
 
         heart_beat_cnt = 0
-        heart_beat_cnt = frame[8]
-        heart_beat_cnt |= frame[7] << 8
-        heart_beat_cnt |= frame[6] << 16
-        heart_beat_cnt |= frame[5] << 24
+        heart_beat_cnt = frame[9]
+        heart_beat_cnt |= frame[8] << 8
+        heart_beat_cnt |= frame[7] << 16
+        heart_beat_cnt |= frame[6] << 24
         print "get heart beat cnt: ", str(heart_beat_cnt)
         ack_info.clear()
-        ack_info.protocol_class = PROTOCOL_CLASS_FP
-        ack_info.protocol_type = FRAME_HEART_BEAT
-        ack_info.data[0] = 1
-        ack_info.data[1] = 2
-        ack_info.data[2] = 3
-        ack_info.data[3] = 4
+        ack_info.protocol_class = protocol_param.PROTOCOL_CLASS_COMMON
+        ack_info.protocol_type = protocol_param.FRAME_COMMON_HEART_BEAT
+        ack_info.data[0] = rcv_id
+        ack_info.data[1] = heart_beat_cnt
 
         ack_queue.put(ack_info)
 

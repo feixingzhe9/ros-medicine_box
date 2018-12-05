@@ -9,24 +9,16 @@ import numpy as np
 import time
 from com import uart_driver
 from com import uart_rcv
+from com import uart_send
 from com import parse_uart
-
-
-
-
-def send_thread(tmp):
-    while 1:
-        #uart_driver.com_send("send test")
-        time.sleep(0.5)
-
-
-
+from com import fp_protocol
 
 def main():
     
     rospy.init_node("medicine_box", anonymous=True)
+
     uart_driver.open_com()
-    thread_send = threading.Thread(target = send_thread, args = (0,))
+    thread_send = threading.Thread(target = uart_send.send_thread, args = (0,))
     thread_rcv = threading.Thread(target = uart_rcv.rcv_thread, args = (0,))
     thread_protocol_proc = threading.Thread(target = parse_uart.protocol_proc_thread, args = (0,))
 
@@ -40,13 +32,8 @@ def main():
     #thread_rcv.join()
     print "join test"
     #### test code start ####
-    while 1:
-        if not parse_uart.ack_queue.empty():
-            ack = parse_uart.ack_queue.get()
-            print 'ack ', ack.data[0]
-            print 'ack ', ack.data[1]
-            print 'ack ', ack.data[2]
-            print 'ack ', ack.data[3]
+    fp_protocol.del_all_user()
+    print 'test: fp delete all user finished'
     rospy.spin()
 
 if __name__ == "__main__":
@@ -59,4 +46,3 @@ if __name__ == "__main__":
         rospy.logerr(sys.exc_info())
         rospy.loginfo("lost connect")
         exit(1)
-

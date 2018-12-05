@@ -15,7 +15,8 @@ def open_com():
 
 def com_send(data):
     global ser_handle
-    #ser_handle.write(data)
+    print "uart_driver send data: ", data
+    ser_handle.write(data)
     ser_handle.write('1234567890')
 
 def com_rcv(cnt):
