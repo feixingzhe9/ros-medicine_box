@@ -26,10 +26,12 @@ def send_thread(tmp):
             data = send_queue.get()
             if data is not None:
                 print "get data to send"            
-                print data.data
+                #print data.data
                 #uart_driver.com_send(data.data[0:data.len])
                 values = bytearray(data.data[0:data.len])
-                print values
+                for i in values:
+                    print hex(i)
+                #print str(values)
                 uart_driver.com_send(values)
-        time.sleep(0.5)
-        print "send thread running . . . "
+        time.sleep(0.1)
+        #print "send thread running . . . "

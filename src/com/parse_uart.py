@@ -18,7 +18,7 @@ class RcvOpt(object):
         self.rcv_buf = []
         for i in range(0, protocol_param.FRAME_LEN_MAX):
             self.rcv_buf.append(0)
-        print self.rcv_buf
+        #print self.rcv_buf
 
 
 def cal_frame_sum(data, data_len):
@@ -80,9 +80,10 @@ def protocol_proc_thread(tmp):
 
 class AckInfo(object):
     def __init__(self):
-        self.serial_num = 0
         self.protocol_class = 0
         self.protocol_type = 0
+        self.ack_id = 0
+        self.serial_num = 0
         self.data = []
         for i in range(0, protocol_param.FRAME_LEN_MAX):
             self.data.append(0)
@@ -97,28 +98,55 @@ def proc_frame(frame, frame_len):
     frame_type = frame[1]
     if frame_len >= protocol_param.FRAME_LEN_MAX - 4:
         return -1
+    if not protocol_param.is_protocol_class(frame_class):
+        return -1
+    serial_num = 0
+    ack_id = 0
+    ack_id = frame[5]
+    ack_id |= frame[4] << 8
+    ack_id |= frame[3] << 16
+    ack_id |= frame[2] << 24
+    serial_num = frame[9]
+    serial_num |= frame[8] << 8
+    serial_num |= frame[7] << 16
+    serial_num |= frame[6] << 24
+
     print "frame type: ", str(frame_type)
-    if frame_type == protocol_param.FRAME_COMMON_HEART_BEAT:
-        rcv_id = 0
-        rcv_id = frame[5]
-        rcv_id |= frame[4] << 8
-        rcv_id |= frame[3] << 16
-        rcv_id |= frame[2] << 24
-        print "get id: ", hex(rcv_id)
+    print "get ack id: ", str(ack_id)
+    print "get serial num: ", str(serial_num)
+    if frame_class == protocol_param.PROTOCOL_CLASS_COMMON:
+        if not protocol_param.is_common_frame_type(frame_type):
+            return -1
+        if frame_type == protocol_param.FRAME_COMMON_HEART_BEAT:
+            rcv_id = 0
+            print "get id: ", hex(rcv_id)
 
-        heart_beat_cnt = 0
-        heart_beat_cnt = frame[9]
-        heart_beat_cnt |= frame[8] << 8
-        heart_beat_cnt |= frame[7] << 16
-        heart_beat_cnt |= frame[6] << 24
-        print "get heart beat cnt: ", str(heart_beat_cnt)
-        ack_info.clear()
-        ack_info.protocol_class = protocol_param.PROTOCOL_CLASS_COMMON
-        ack_info.protocol_type = protocol_param.FRAME_COMMON_HEART_BEAT
-        ack_info.data[0] = rcv_id
-        ack_info.data[1] = heart_beat_cnt
+            heart_beat_cnt = 0
+            heart_beat_cnt = frame[9]
+            heart_beat_cnt |= frame[8] << 8
+            heart_beat_cnt |= frame[7] << 16
+            heart_beat_cnt |= frame[6] << 24
+            print "get heart beat cnt: ", str(heart_beat_cnt)
+            ack_info.clear()
+            ack_info.protocol_class = protocol_param.PROTOCOL_CLASS_COMMON
+            ack_info.protocol_type = protocol_param.FRAME_COMMON_HEART_BEAT
+            ack_info.data[0] = ack_id
+            ack_info.data[1] = heart_beat_cnt
 
-        ack_queue.put(ack_info)
+            ack_queue.put(ack_info)
+
+    elif frame_class == protocol_param.PROTOCOL_CLASS_FP:
+        if not protocol_param.is_fp_frame_type(frame_type):
+            return -1
+        if frame_type == protocol_param.FRAME_FP_DEL_ALL_USER:
+
+            ack_info.clear()
+            ack_info.protocol_class = protocol_param.PROTOCOL_CLASS_COMMON
+            ack_info.protocol_type = protocol_param.FRAME_COMMON_HEART_BEAT
+            ack_info.serial_num = serial_num
+            ack_info.ack_id = ack_id
+
+            ack_queue.put(ack_info)
 
 
 def __main__():

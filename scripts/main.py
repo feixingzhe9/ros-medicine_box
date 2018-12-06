@@ -33,7 +33,6 @@ def main():
     print "join test"
     #### test code start ####
     fp_protocol.del_all_user()
-    print 'test: fp delete all user finished'
     rospy.spin()
 
 if __name__ == "__main__":

@@ -30,17 +30,24 @@ def del_all_user():
     send_data.len = data_len
     uart_send.send_queue.put(send_data)
 
-
+    cnt = 0
     while 1:
         if not parse_uart.ack_queue.empty():
             ack = parse_uart.ack_queue.get()
+            print 'my serial num: ', serial_num
+            print 'ack serial num: ', ack.serial_num
             if ack.serial_num == serial_num:
-                print __func__, ': get right ack'
+                print  'del_all_user: get right ack'
+                cnt = 0
+                uart_send.send_queue.queue.clear()  #clear send queue cause we get right ack
                 break
             print 'ack ', hex(ack.data[0])
             print 'ack ', ack.data[1]
             print 'ack ', ack.data[2]
             print 'ack ', ack.data[3]
-        time.sleep(0.5)
-        uart_send.send_queue.put(send_data)
+        time.sleep(0.1)
+        cnt = cnt + 1
+        if cnt >= 5:
+            uart_send.send_queue.put(send_data)
+            cnt = 0
 
