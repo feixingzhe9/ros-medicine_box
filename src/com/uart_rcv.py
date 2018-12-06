@@ -15,6 +15,7 @@ def rcv_thread(tmp):
         read_data = uart_driver.com_rcv(20)
         for i in read_data:
              rcv_queue.put(ord(i))
+             print 'rcv: ', hex(ord(i))
         time.sleep(0.1)
 
 

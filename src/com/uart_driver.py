@@ -17,7 +17,7 @@ def com_send(data):
     global ser_handle
     print "uart_driver send data: "
     for i in data:
-        print hex(i)
+        print 'send: ', hex(i)
     ser_handle.write(data)
     #ser_handle.write('1234567890')
 

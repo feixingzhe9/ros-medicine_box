@@ -82,12 +82,18 @@ class AckInfo(object):
     def __init__(self):
         self.protocol_class = 0
         self.protocol_type = 0
-        self.ack_id = 0
+        self.ack_mcu_id = 0
         self.serial_num = 0
+        self.proc_status = 0
         self.data = []
         for i in range(0, protocol_param.FRAME_LEN_MAX):
             self.data.append(0)
     def clear(self):
+        self.protocol_class = 0
+        self.protocol_type = 0
+        self.ack_mcu_id = 0
+        self.serial_num = 0
+        self.proc_status = 0
         for i in range(0, protocol_param.FRAME_LEN_MAX):
             self.data[i] = 0
 
@@ -138,16 +144,25 @@ def proc_frame(frame, frame_len):
     elif frame_class == protocol_param.PROTOCOL_CLASS_FP:
         if not protocol_param.is_fp_frame_type(frame_type):
             return -1
+
         if frame_type == protocol_param.FRAME_FP_DEL_ALL_USER:
-
             ack_info.clear()
-            ack_info.protocol_class = protocol_param.PROTOCOL_CLASS_COMMON
-            ack_info.protocol_type = protocol_param.FRAME_COMMON_HEART_BEAT
+            ack_info.protocol_class = protocol_param.PROTOCOL_CLASS_FP
+            ack_info.protocol_type = protocol_param.FRAME_FP_DEL_ALL_USER
             ack_info.serial_num = serial_num
-            ack_info.ack_id = ack_id
-
+            ack_info.ack_mcu_id = ack_id
+            ack_info.proc_status = frame[10]
             ack_queue.put(ack_info)
 
+        if frame_type == protocol_param.FRAME_FP_ADD_FP_BY_PRESS:
+            ack_info.clear()
+            ack_info.protocol_class = protocol_param.PROTOCOL_CLASS_FP
+            ack_info.protocol_type = protocol_param.FRAME_FP_ADD_FP_BY_PRESS
+            ack_info.serial_num = serial_num
+            ack_info.ack_mcu_id = ack_id
+            status = frame[10]
+            ack_info.data[0] = status
+            ack_queue.put(ack_info)
 
 def __main__():
     pass
