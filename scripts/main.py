@@ -33,7 +33,8 @@ def main():
     print "join test"
     #### test code start ####
     #fp_protocol.del_all_user(mcu_id = 0x12345678)
-    fp_protocol.add_fp_by_pressing(0x12345678, 0x01, 2)
+    #fp_protocol.add_fp_by_pressing(0x12345678, 0xad, 2)
+    fp_protocol.unlock(0x12345678)
     rospy.spin()
 
 if __name__ == "__main__":

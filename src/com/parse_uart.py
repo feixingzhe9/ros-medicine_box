@@ -141,6 +141,14 @@ def proc_frame(frame, frame_len):
 
             ack_queue.put(ack_info)
 
+        if frame_type == protocol_param.FRAME_COMMON_UNLOCK:
+            ack_info.clear()
+            ack_info.protocol_class = protocol_param.PROTOCOL_CLASS_COMMON
+            ack_info.protocol_type = protocol_param.FRAME_COMMON_UNLOCK
+            ack_info.serial_num = serial_num
+            ack_info.ack_mcu_id = ack_id
+            ack_queue.put(ack_info)
+
     elif frame_class == protocol_param.PROTOCOL_CLASS_FP:
         if not protocol_param.is_fp_frame_type(frame_type):
             return -1

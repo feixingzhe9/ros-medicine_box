@@ -20,7 +20,8 @@ PROTOCOL_CLASS_MAX = 4
 #### protocol common class type define ####
 FRAME_COMMON_TYPE_MIN = 0
 FRAME_COMMON_HEART_BEAT = 1
-FRAME_COMMON_TYPE_MAX = 2
+FRAME_COMMON_UNLOCK = 2
+FRAME_COMMON_TYPE_MAX = 3
 
 #### protocol fingerprint class type define ####
 FRAME_FP_TYPE_MIN = 0
