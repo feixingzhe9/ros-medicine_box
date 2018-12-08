@@ -172,5 +172,29 @@ def proc_frame(frame, frame_len):
             ack_info.data[0] = status
             ack_queue.put(ack_info)
 
+
+    elif frame_class == protocol_param.PROTOCOL_CLASS_DISPLAY:
+        if not protocol_param.is_fp_frame_type(frame_type):
+            return -1
+
+        if frame_type == protocol_param.FRAME_DISPLAY_SHOW_CONTENT:
+            ack_info.clear()
+            ack_info.protocol_class = protocol_param.PROTOCOL_CLASS_DISPLAY
+            ack_info.protocol_type = protocol_param.FRAME_DISPLAY_SHOW_CONTENT
+            ack_info.serial_num = serial_num
+            ack_info.ack_mcu_id = ack_id
+            ack_info.proc_status = frame[10]
+            ack_queue.put(ack_info)
+
+        if frame_type == protocol_param.FRAME_FP_ADD_FP_BY_PRESS:
+            ack_info.clear()
+            ack_info.protocol_class = protocol_param.PROTOCOL_CLASS_FP
+            ack_info.protocol_type = protocol_param.FRAME_FP_ADD_FP_BY_PRESS
+            ack_info.serial_num = serial_num
+            ack_info.ack_mcu_id = ack_id
+            status = frame[10]
+            ack_info.data[0] = status
+            ack_queue.put(ack_info)
+
 def __main__():
     pass

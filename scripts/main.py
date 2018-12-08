@@ -12,6 +12,7 @@ from com import uart_rcv
 from com import uart_send
 from com import parse_uart
 from com import fp_protocol
+from com import protocol_param
 
 def main():
     
@@ -33,8 +34,14 @@ def main():
     print "join test"
     #### test code start ####
     #fp_protocol.del_all_user(mcu_id = 0x12345678)
-    #fp_protocol.add_fp_by_pressing(0x12345678, 0xad, 2)
+    #fp_protocol.add_fp_by_pressing(0x12345678, 0xb1, 2)
     fp_protocol.unlock(0x12345678)
+    content_str = '诺亚医院物流机器人'
+    content_gb = 'Hello 诺亚医院物流机器人 world'.encode('gb18030')
+    #content_str.encode("gb18030")
+    #content_gb = content_str.encode('gb18030')
+    fp_protocol.show_content(0x12345678, 50, 10, content_gb, len(content_gb),\
+                             protocol_param.DISPLAY_RESOLUTION_ASCII_8X16_NORMAL, protocol_param.DISPLAY_COLOR_RED, 1)
     rospy.spin()
 
 if __name__ == "__main__":
