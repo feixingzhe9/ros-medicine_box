@@ -56,6 +56,7 @@ def del_all_user(mcu_id):
     send_data.data[13] = protocol_param.FRAME_FOOTER
 
     send_data.len = data_len
+    uart_send.send_queue.queue.clear()  #clear send queue
     uart_send.send_queue.put(send_data)
 
     cnt = 0
@@ -96,13 +97,14 @@ def add_fp_by_pressing(mcu_id, fp_id, fp_permission):
     send_data.data[2] = protocol_param.PROTOCOL_CLASS_FP
     send_data.data[3] = protocol_param.FRAME_FP_ADD_FP_BY_PRESS
     fill_mcu_id_and_serial_num(send_data.data, mcu_id, serial_num)
-    send_data.data[12] = (fp_id << 8) & 0xff
+    send_data.data[12] = (fp_id >> 8) & 0xff
     send_data.data[13] = fp_id & 0xff
     send_data.data[14] = fp_permission & 0xff
     send_data.data[15] = parse_uart.cal_frame_sum(send_data.data, data_len - 2)
     send_data.data[16] = protocol_param.FRAME_FOOTER
 
     send_data.len = data_len
+    uart_send.send_queue.queue.clear()  #clear send queue
     uart_send.send_queue.put(send_data)
 
     cnt = 0
@@ -122,7 +124,7 @@ def add_fp_by_pressing(mcu_id, fp_id, fp_permission):
             uart_send.send_queue.put(send_data)
         if cnt > 25 * 20:
             print ''
-            print file_, sys._getframe().f_code.co_name, sys._getframe().f_lineno, "Error: del_all_user failed ! !"
+            print file_, sys._getframe().f_code.co_name, sys._getframe().f_lineno, "Error: add fingerprint by pressing failed ! !"
             return -1
 
 
@@ -142,6 +144,7 @@ def unlock(mcu_id):
     send_data.data[13] = protocol_param.FRAME_FOOTER
 
     send_data.len = data_len
+    uart_send.send_queue.queue.clear()  #clear send queue
     uart_send.send_queue.put(send_data)
 
     cnt = 0
@@ -184,13 +187,13 @@ def show_content(mcu_id, start_x, start_y, content, content_len, resolution, col
     send_data.data[2] = protocol_param.PROTOCOL_CLASS_DISPLAY
     send_data.data[3] = protocol_param.FRAME_DISPLAY_SHOW_CONTENT
     fill_mcu_id_and_serial_num(send_data.data, mcu_id, serial_num)
-    send_data.data[12] = (start_x << 8) & 0xff
+    send_data.data[12] = (start_x >> 8) & 0xff
     send_data.data[13] = start_x & 0xff
-    send_data.data[14] = (start_y << 8) & 0xff
+    send_data.data[14] = (start_y >> 8) & 0xff
     send_data.data[15] = start_y & 0xff
-    send_data.data[16] = (content_len << 8) & 0xff
+    send_data.data[16] = (content_len >> 8) & 0xff
     send_data.data[17] = content_len & 0xff
-    send_data.data[18] = (color << 8) & 0xff
+    send_data.data[18] = (color >> 8) & 0xff
     send_data.data[19] = color & 0xff
     send_data.data[20] = resolution & 0xff
     send_data.data[21] = layer & 0xff
@@ -203,6 +206,7 @@ def show_content(mcu_id, start_x, start_y, content, content_len, resolution, col
     send_data.data[23 + str_len] = protocol_param.FRAME_FOOTER
 
     send_data.len = data_len
+    uart_send.send_queue.queue.clear()  #clear send queue
     uart_send.send_queue.put(send_data)
 
     cnt = 0
