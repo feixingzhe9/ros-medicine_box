@@ -70,7 +70,7 @@ def protocol_proc_thread(tmp):
                     wireless_rcv_com_opt.end_flag = False
 
                 wireless_rcv_com_opt.rcv_cnt = 0
-    
+
             wireless_rcv_com_opt.rcv_cnt =  wireless_rcv_com_opt.rcv_cnt + 1
             if wireless_rcv_com_opt.rcv_cnt >= protocol_param.FRAME_LEN_MAX - 1:
                 wireless_rcv_com_opt.start_flag = False

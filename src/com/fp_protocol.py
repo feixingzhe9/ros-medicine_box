@@ -42,7 +42,7 @@ def fill_mcu_id_and_serial_num(data, mcu_id, seiral_num):
 def del_all_user(mcu_id):
     global serial_num
     serial_num = serial_num + 1
-    data_len = 14 
+    data_len = 14
     send_data = uart_send.SendData()
     send_data.clear()
     send_data.data[0] = protocol_param.FRAME_HEADER
@@ -169,7 +169,7 @@ def unlock(mcu_id):
 
 
 
-def show_content(mcu_id, start_x, start_y, content, content_len, resolution, color, layer):
+def show_content(mcu_id, start_x, start_y, content, content_len, resolution, period, color, layer):
     if start_x >= protocol_param.DISPLAY_X_MAX or start_y >=protocol_param.DISPLAY_Y_MAX:
         print file_, sys._getframe().f_code.co_name, sys._getframe().f_lineno, " ERROR: param error !"
         print 'start_x: ', start_x, ' start_y: ', start_y
@@ -177,7 +177,7 @@ def show_content(mcu_id, start_x, start_y, content, content_len, resolution, col
     global serial_num
     str_len = len(content)
     serial_num = serial_num + 1
-    data_len = str_len + 24
+    data_len = str_len + 26
 
     send_data = uart_send.SendData()
 
@@ -197,13 +197,16 @@ def show_content(mcu_id, start_x, start_y, content, content_len, resolution, col
     send_data.data[19] = color & 0xff
     send_data.data[20] = resolution & 0xff
     send_data.data[21] = layer & 0xff
+    send_data.data[22] = ((period / 10) >> 8) & 0xff
+    send_data.data[23] = (period / 10) & 0xff
 
     #content = content.encode('gb18030')
     for i in range(0, str_len):
-        send_data.data[22 + i] = ord(content[i]) & 0xff
+        #send_data.data[24 + i] = ord(content[i]) & 0xff
+        send_data.data[24 + i] = content[i] & 0xff
 
-    send_data.data[22 + str_len] = parse_uart.cal_frame_sum(send_data.data, data_len - 2)
-    send_data.data[23 + str_len] = protocol_param.FRAME_FOOTER
+    send_data.data[24 + str_len] = parse_uart.cal_frame_sum(send_data.data, data_len - 2)
+    send_data.data[25 + str_len] = protocol_param.FRAME_FOOTER
 
     send_data.len = data_len
     uart_send.send_queue.queue.clear()  #clear send queue
@@ -222,9 +225,9 @@ def show_content(mcu_id, start_x, start_y, content, content_len, resolution, col
                 break
         time.sleep(0.1)
         cnt = cnt + 1
-        if cnt % 25 == 4:
+        if cnt % 5 == 4:
             uart_send.send_queue.put(send_data)
-        if cnt > 25 * 20:
+        if cnt > 25:
             print ''
             print file_, sys._getframe().f_code.co_name, sys._getframe().f_lineno, "Error: show content failed ! !"
             return -1

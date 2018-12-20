@@ -56,16 +56,18 @@ def __display_test_callback(msg):
     print 'start_x: ', start_x
     print 'start_y: ', start_y
     print 'period: ', period
-    content_gb = content.encode('gb18030')
+    #content_gb = content.encode('gb18030')
 #    for i in content_gb:
 #        print 'content_gb: ', hex(i)
 #    print 'content_gb: ', content_gb
-    content_gb = content
-    fp_protocol.show_content(0x12345678, start_x, start_y, content_gb, len(content_gb),\
-                             protocol_param.DISPLAY_RESOLUTION_ASCII_8X16_NORMAL, protocol_param.DISPLAY_COLOR_RED, 1)
+#    content_gb = content
+
+    fp_protocol.show_content(0x12345678, start_x, start_y, content, len(content),\
+                             protocol_param.DISPLAY_RESOLUTION_ASCII_8X16_NORMAL, period, protocol_param.DISPLAY_COLOR_RED, 1)
+
 
 def main():
-    
+
     rospy.init_node("medicine_box", anonymous=True)
 
     rospy.Subscriber("driver_medicine_box/test_add_fp_by_press",String , __add_fp_by_press_test_callback, None, 5)
@@ -93,10 +95,11 @@ def main():
     fp_protocol.unlock(0x12345678)
     #content_str = '诺亚医院物流机器人'
     content_gb = 'Hello 诺亚医院物流机器人 world'.encode('gb18030')
+    print content_gb
     #content_str.encode("gb18030")
     #content_gb = content_str.encode('gb18030')
-    #fp_protocol.show_content(0x12345678, 50, 10, content_gb, len(content_gb),\
-    #                         protocol_param.DISPLAY_RESOLUTION_ASCII_8X16_NORMAL, protocol_param.DISPLAY_COLOR_RED, 1)
+    #fp_protocol.show_content(0x12345678, 50, 280, content_gb, len(content_gb),\
+    #                         protocol_param.DISPLAY_RESOLUTION_ASCII_8X16_NORMAL, 0, protocol_param.DISPLAY_COLOR_RED, 1)
     rospy.spin()
 
 if __name__ == "__main__":
